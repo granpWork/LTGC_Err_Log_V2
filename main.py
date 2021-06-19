@@ -1,12 +1,10 @@
 import os
 from datetime import datetime
-from os import path
 from Utils import Utils
 
-import numpy as np
 import pandas as pd
 import re
-import sys
+import shutil
 
 
 def checkEmail(email):
@@ -312,36 +310,7 @@ def getError_IsEmployeeNumNA(filename, FilePath):
     pass
 
 
-if __name__ == '__main__':
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.max_rows', None)
-    pd.set_option('display.width', None)
-
-    today = datetime.today()
-    dateTime = today.strftime("%m_%d_%y_%H%M%S")
-
-    inPath = r"/Users/ranperedo/Documents/Vaccine/LTGSplit_Err_log/in"
-    outPath = r"/Users/ranperedo/Documents/Vaccine/LTGSplit_Err_log/out"
-    excelLogPath = r"/Users/ranperedo/Documents/Vaccine/LTGSplit_Err_log/excel_log"
-
-    inFileList = [
-        "LTGC_CEIRMasterlist.xlsx",
-        "HHLTGC_CEIRMasterlist.xlsx"
-    ]
-
-    inFile_EMP = inPath + "/LTGC_CEIRMasterlist.xlsx"
-    inFile_HH = inPath + "/HHLTGC_CEIRMasterlist.xlsx"
-
-    print("==============================================================")
-    print("Running Scpirt: V2 Error Finder LTGC Master List EMP and HH......")
-    print("==============================================================")
-
-    # merge infile - get email duplocate - email format - N/A
-    getMergeFileValidateEmail(inFile_EMP, inFile_HH, excelLogPath)
-
-    # Get all filenames in excelLogPath
-    arrFilenames = os.listdir(excelLogPath)
-
+def getErrLog(arrFilenames):
     for filename in arrFilenames:
         FilePath = os.path.join(excelLogPath, filename)
 
@@ -359,3 +328,71 @@ if __name__ == '__main__':
             getError_IsEmployeeNumDup(filename, FilePath)
             getError_IsEmployeeNumBlank(filename, FilePath)
             getError_IsEmployeeNumNA(filename, FilePath)
+
+
+
+    pass
+
+
+def checkCompressAndDelete(file):
+    subFolder = ["out", "excel_log"]
+    compressedDir = os.path.join(file, "compressed")
+
+    # Compress
+    for folder in subFolder:
+        working_dir = os.path.join(file, folder)
+
+        if os.listdir(working_dir):
+            shutil.make_archive(os.path.join(compressedDir, folder+"_"+dateTime), 'zip', working_dir)
+
+    # Remove Files
+    for folder in subFolder:
+        dir = os.path.join(file, folder)
+
+        for files in os.listdir(dir):
+            path = os.path.join(dir, files)
+            try:
+                shutil.rmtree(path)
+            except OSError:
+                os.remove(path)
+
+    pass
+
+
+if __name__ == '__main__':
+    pd.set_option('display.max_columns', None)
+    pd.set_option('display.max_rows', None)
+    pd.set_option('display.width', None)
+
+    today = datetime.today()
+    dateTime = today.strftime("%m%d%y%H%M%S")
+
+    dirPath = r"/Users/ranperedo/Documents/Vaccine/LTGSplit_Err_log/"
+    inPath = os.path.join(dirPath, "in")
+    outPath = os.path.join(dirPath, "out")
+    excelLogPath = os.path.join(dirPath, "excel_log")
+
+    inFileList = [
+        "LTGC_CEIRMasterlist.xlsx",
+        "HHLTGC_CEIRMasterlist.xlsx"
+    ]
+
+    inFile_EMP = os.path.join(inPath, "LTGC_CEIRMasterlist.xlsx")
+    inFile_HH = os.path.join(inPath, "HHLTGC_CEIRMasterlist.xlsx")
+
+    print("==============================================================")
+    print("Running Scpirt: V2 Error Finder LTGC Master List EMP and HH......")
+    print("==============================================================")
+
+    # Check if Folders are empty, if not compress it then delete content - out, excel_log
+    checkCompressAndDelete(dirPath)
+
+    # merge infile and generate added fields
+    getMergeFileValidateEmail(inFile_EMP, inFile_HH, excelLogPath)
+
+    # Get all filenames in excelLogPath
+    arrFilenames = os.listdir(excelLogPath)
+
+    # Do the process: get logs
+    getErrLog(arrFilenames)
+
